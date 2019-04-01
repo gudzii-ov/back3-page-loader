@@ -13,26 +13,26 @@ beforeAll(async () => {
   axios.defaults.adapter = httpAdapter;
 
   data.ostmpdir = os.tmpdir();
-  data.host = 'https://hexlet.io';
-  data.simplePageUrl = 'cources';
+  data.host = 'http://localhost';
+  data.simplePageUrl = '/simple-page';
   data.simplePageHtml = await fs.readFile(path.join(__dirname, '__fixtures__/simple-page.html'), 'utf8');
 
   nock(data.host)
     .log(console.log)
-    .get(data.pageToLoad)
-    .reply(200, data.simpleHtml);
+    .get(data.simplePageUrl)
+    .reply(200, data.simplePageHtml);
 });
 
-test('test#1: download html wthout assets', async () => {
+test('test#1: download html without assets', async () => {
   const {
     ostmpdir, host, simplePageUrl, simplePageHtml,
   } = data;
 
-  const fileName = 'hexlet-io-courses.html';
   const tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
+  const fileName = 'localhost-simple-page.html';
   const filePath = path.resolve(tmpDir, fileName);
 
-  await app(`${host}/${simplePageUrl}`, tmpDir);
-  const result = fs.readFile(filePath, 'utf-8');
+  await app(`${host}${simplePageUrl}`, tmpDir);
+  const result = fs.readFile(filePath, 'utf8');
   return expect(result).resolves.toBe(simplePageHtml);
 });
