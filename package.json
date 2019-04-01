@@ -1,6 +1,6 @@
 {
   "name": "page-loader-gudzii-ov",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "3rd backend Hexlet project: page loader",
   "main": "dist/index.js",
   "bin": {
