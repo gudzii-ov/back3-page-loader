@@ -5,58 +5,33 @@ import os from 'os';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import app from '../src';
-
-const data = {};
+import loadPage from '../src';
 
 beforeAll(async () => {
   axios.defaults.adapter = httpAdapter;
-
-  data.ostmpdir = os.tmpdir();
-  data.host = 'http://localhost';
-  data.simplePageUrl = '/simple-page';
-  data.simplePageHtml = await fs.readFile(path.join(__dirname, '__fixtures__/simple-page.html'), 'utf8');
 });
 
-describe('download simple page without assets', () => {
-  beforeEach(() => {
-    nock(data.host)
+describe('Test downloading example pages', () => {
+  const ostmpdir = os.tmpdir();
+  const host = 'http://localhost';
+
+  test('test #1: download html without assets to custom directory', async () => {
+    const simplePageUrl = '/simple-page';
+    const simplePageFixturePath = path.join(__dirname, '__fixtures__/simple-page.html');
+
+    const tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
+
+    const fileName = 'localhost-simple-page.html';
+    const outputFilePath = path.resolve(tmpDir, fileName);
+    const simplePageHtml = await fs.readFile(simplePageFixturePath, 'utf8');
+
+    nock(host)
       .log(console.log)
-      .get(data.simplePageUrl)
-      .reply(200, data.simplePageHtml);
-  });
+      .get(simplePageUrl)
+      .reply(200, simplePageHtml);
 
-  test('test#1: download html without assets to current directory', async () => {
-    const {
-      ostmpdir, host, simplePageUrl, simplePageHtml,
-    } = data;
-
-    const tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
-    const fileName = 'localhost-simple-page.html';
-    const filePath = path.resolve(tmpDir, fileName);
-
-    try {
-      process.chdir(tmpDir);
-    } catch (err) {
-      console.log(`Unable to change directory: ${err}`);
-    }
-
-    await app(`${host}${simplePageUrl}`, process.cwd());
-    const result = fs.readFile(filePath, 'utf8');
-    return expect(result).resolves.toBe(simplePageHtml);
-  });
-
-  test('test#2: download html without assets to custom directory', async () => {
-    const {
-      ostmpdir, host, simplePageUrl, simplePageHtml,
-    } = data;
-
-    const tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
-    const fileName = 'localhost-simple-page.html';
-    const filePath = path.resolve(tmpDir, fileName);
-
-    await app(`${host}${simplePageUrl}`, tmpDir);
-    const result = fs.readFile(filePath, 'utf8');
-    return expect(result).resolves.toBe(simplePageHtml);
+    await loadPage(`${host}${simplePageUrl}`, tmpDir);
+    const result = await fs.readFile(outputFilePath, 'utf8');
+    return expect(result).toBe(simplePageHtml);
   });
 });
