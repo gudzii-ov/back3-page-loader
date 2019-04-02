@@ -91,7 +91,7 @@ describe('Suit #2: download page with assets', () => {
     const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page_files', fileName);
 
     const result = await fs.readFile(outputFilePath, 'utf8');
-    return expect(result).toBe(assetsPageHtml);
+    return expect(result).toBe(styleData);
   });
 
   test('test #3: check javascript', async () => {
@@ -99,7 +99,7 @@ describe('Suit #2: download page with assets', () => {
     const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page_files', fileName);
 
     const result = await fs.readFile(outputFilePath, 'utf8');
-    return expect(result).toBe(assetsPageHtml);
+    return expect(result).toBe(scriptData);
   });
 
   test('test #4: check image', async () => {
@@ -107,6 +107,6 @@ describe('Suit #2: download page with assets', () => {
     const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page_files', fileName);
 
     const result = await fs.readFile(outputFilePath);
-    return expect(result).toBe(assetsPageHtml);
+    return expect(result).toBe(imageData);
   });
 });
