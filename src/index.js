@@ -13,11 +13,10 @@ const isLinkLocal = (link) => {
 const getFileName = (source) => {
   const { pathname } = url.parse(source);
   const extention = pathname.match(/\.\w+$/)[0];
-  const extRegExp = new RegExp(extention);
 
   return pathname
     .replace(/^\//, '')
-    .replace(extRegExp, '')
+    .replace(extention, '')
     .replace(/[\W_]+/g, '-')
     .concat(extention);
 };
@@ -85,7 +84,21 @@ const loadPage = (source, outputDirectory) => {
 
       assetsUrls = [...textAssetsUrls, ...mediaAssetsUrls];
 
-      return fs.writeFile(outputHtmlPath, data);
+      const regExp = [...links, ...scripts, ...images]
+        .map((oldValue) => {
+          const newValue = `${assetsDirName}/${getFileName(oldValue)}`;
+          return {
+            oldValue,
+            newValue,
+          };
+        });
+
+      const newHtml = regExp.reduce((acc, currentValue) => {
+        const { oldValue, newValue } = currentValue;
+        return acc.replace(oldValue, newValue);
+      }, data);
+
+      return fs.writeFile(outputHtmlPath, newHtml);
     })
     .then(() => fs.mkdir(assetsDirPath))
     .then(() => {
