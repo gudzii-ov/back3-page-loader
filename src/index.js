@@ -12,7 +12,7 @@ const isLinkLocal = (link) => {
 
 const getFileName = (source) => {
   const { pathname } = url.parse(source);
-  const extention = pathname.match(/\.\w+$/)[0];
+  const extention = pathname.match(/\.\w+$/) === null ? '' : pathname.match(/\.\w+$/)[0];
 
   return pathname
     .replace(/^\//, '')
@@ -103,7 +103,9 @@ const loadPage = (source, outputDirectory) => {
         return;
       }
       const promises = assetsUrls
-        .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath));
+        .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath)
+          .then(v => ({ result: 'success', value: v }))
+          .catch(e => ({ result: 'error', error: e })));
       Promise.all(promises);
     })
     .then(() => fs.writeFile(outputHtmlPath, newHtml));
