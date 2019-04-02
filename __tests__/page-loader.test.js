@@ -39,7 +39,8 @@ describe('Suit #1: download page without assets', () => {
 describe('Suit #2: download page with assets', () => {
   const ostmpdir = os.tmpdir();
   const fixturesPath = path.join(__dirname, '__fixtures__');
-  const assetsPageFixturePath = path.join(fixturesPath, 'assets-page.html');
+  const assetsPagePath = path.join(fixturesPath, 'assets-page.html');
+  const downloadedPagePath = path.join(fixturesPath, 'assets-page-downloaded.html');
 
   const assetsPageUrl = '/assets-page';
   const styleUrl = '/assets/style.css';
@@ -48,6 +49,7 @@ describe('Suit #2: download page with assets', () => {
 
   let tmpDir;
   let assetsPageHtml;
+  let downloadedPageHtml;
   let styleData;
   let scriptData;
   let imageData;
@@ -56,7 +58,8 @@ describe('Suit #2: download page with assets', () => {
     const host = 'http://localhost';
 
     tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
-    assetsPageHtml = await fs.readFile(assetsPageFixturePath, 'utf8');
+    assetsPageHtml = await fs.readFile(assetsPagePath, 'utf8');
+    downloadedPageHtml = await fs.readFile(downloadedPagePath, 'utf8');
     styleData = await fs.readFile(path.join(fixturesPath, styleUrl), 'utf8');
     scriptData = await fs.readFile(path.join(fixturesPath, scriptUrl), 'utf8');
     imageData = await fs.readFile(path.join(fixturesPath, imageUrl));
@@ -70,7 +73,7 @@ describe('Suit #2: download page with assets', () => {
       .reply(200, styleData)
       .get(scriptUrl)
       .reply(200, scriptData)
-      .get(scriptUrl)
+      .get(imageUrl)
       .reply(200, imageData);
 
     await loadPage(`${host}${assetsPageUrl}`, tmpDir);
@@ -82,8 +85,8 @@ describe('Suit #2: download page with assets', () => {
     const fileName = 'localhost-assets-page.html';
     const outputFilePath = path.resolve(tmpDir, fileName);
 
-    const result = await fs.access(outputFilePath);
-    return expect(result).toBeUndefined(); // check html accessibility
+    const result = await fs.readFile(outputFilePath, 'utf8');
+    return expect(result).toBe(downloadedPageHtml);
   });
 
   test('test #2: check stylesheet', async () => {
