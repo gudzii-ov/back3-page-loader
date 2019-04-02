@@ -164,15 +164,7 @@ describe('Suit #3: download page with assets 2', () => {
     return expect(result).toBe(downloadedPageHtml);
   });
 
-  test('test #2: check stylesheet', async () => {
-    const fileName = 'assets-style.css';
-    const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-without-one_files', fileName);
-
-    const result = await fs.readFile(outputFilePath, 'utf8');
-    return expect(result).toBe(styleData);
-  });
-
-  test('test #3: check javascript', async () => {
+  test('test #2: check javascript', async () => {
     const fileName = 'assets-script.js';
     const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-without-one_files', fileName);
 
@@ -180,7 +172,7 @@ describe('Suit #3: download page with assets 2', () => {
     return expect(result).toBe(scriptData);
   });
 
-  test('test #4: check image', async () => {
+  test('test #3: check image', async () => {
     const fileName = 'assets-image.png';
     const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-without-one_files', fileName);
 
