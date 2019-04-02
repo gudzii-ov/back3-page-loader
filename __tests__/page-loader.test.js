@@ -26,7 +26,6 @@ describe('Suit #1: download page without assets', () => {
     const simplePageHtml = await fs.readFile(simplePageFixturePath, 'utf8');
 
     nock(host)
-      .log(console.log)
       .get(simplePageUrl)
       .reply(200, simplePageHtml);
 
