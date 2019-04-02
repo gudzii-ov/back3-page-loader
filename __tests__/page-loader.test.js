@@ -66,7 +66,6 @@ describe('Suit #2: download page with assets', () => {
 
     const nockScope = nock(host)
       .persist()
-      .log(console.log)
       .get(assetsPageUrl)
       .reply(200, assetsPageHtml)
       .get(styleUrl)
@@ -110,6 +109,6 @@ describe('Suit #2: download page with assets', () => {
     const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page_files', fileName);
 
     const result = await fs.readFile(outputFilePath);
-    return expect(result).toBe(imageData);
+    return expect(result).toEqual(imageData);
   });
 });
