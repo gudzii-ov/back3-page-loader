@@ -37,6 +37,7 @@
   "dependencies": {
     "@babel/plugin-proposal-pipeline-operator": "^7.3.2",
     "axios": "^0.18.0",
+    "cheerio": "^1.0.0-rc.2",
     "commander": "^2.19.0",
     "source-map-support": "^0.5.10"
   },
