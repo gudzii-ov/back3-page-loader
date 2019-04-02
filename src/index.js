@@ -21,9 +21,25 @@ const getFileName = (source) => {
     .concat(extention);
 };
 
-const loadAsset = (source, outputFilePath, responseType) => axios
+const getLocalAssetsList = (html) => {
+  const $ = cheerio.load(html);
+  const links = $('link')
+    .map((index, element) => $(element).attr('href'))
+    .get();
+  const scripts = $('script')
+    .map((index, element) => $(element).attr('src'))
+    .get();
+  const images = $('img')
+    .map((index, element) => $(element).attr('src'))
+    .get();
+
+  return [...links, ...scripts, ...images]
+    .filter(item => isLinkLocal(item));
+};
+
+const loadAsset = (source, outputFilePath) => axios
   .get(source, {
-    responseType,
+    responseType: 'arraybuffer',
   })
   .then(({ data }) => fs.writeFile(outputFilePath, data));
 
@@ -31,7 +47,12 @@ const loadAsset = (source, outputFilePath, responseType) => axios
 
 const loadPage = (source, outputDirectory) => {
   const { hostname, pathname } = url.parse(source);
-  const outputHtmlName = `${hostname}-${pathname}`.replace(/[\W_]+/g, '-').concat('.html');
+  const preName = pathname === '/' ? hostname : `${hostname}-${pathname}`;
+  const outputHtmlName = preName
+    .replace(/^\//, '')
+    .replace(/[\W_]+/g, '-')
+    .concat('.html');
+
   const outputHtmlPath = path.join(outputDirectory, outputHtmlName);
 
   const assetsDirName = outputHtmlName.replace(/\.html$/, '_files');
@@ -42,74 +63,47 @@ const loadPage = (source, outputDirectory) => {
   // download source page
   return axios.get(source)
     .then(({ data }) => {
-      const $ = cheerio.load(data);
-      const links = $('link')
-        .map((index, element) => $(element).attr('href'))
-        .get()
-        .filter(assetLink => isLinkLocal(assetLink));
-      const scripts = $('script')
-        .map((index, element) => $(element).attr('src'))
-        .get()
-        .filter(assetLink => isLinkLocal(assetLink));
-      const images = $('img')
-        .map((index, element) => $(element).attr('src'))
-        .get()
-        .filter(assetLink => isLinkLocal(assetLink));
+      const assetsLinks = getLocalAssetsList(data);
 
-      const textAssetsUrls = [...links, ...scripts]
-        .map(assetLink => url.resolve(source, assetLink))
-        .map((assetUrl) => {
-          const outputFileName = getFileName(assetUrl);
-          const outputFilePath = path.join(assetsDirPath, outputFileName);
+      if (assetsLinks.length !== 0) {
+        assetsUrls = assetsLinks
+          .map(assetLink => url.resolve(source, assetLink))
+          .map((assetUrl) => {
+            const outputFileName = getFileName(assetUrl);
+            const outputFilePath = path.join(assetsDirPath, outputFileName);
 
-          return {
-            assetUrl,
-            outputFilePath,
-            responseType: 'text',
-          };
-        });
+            return {
+              assetUrl,
+              outputFilePath,
+            };
+          });
 
-      const mediaAssetsUrls = images
-        .map(assetLink => url.resolve(source, assetLink))
-        .map((assetUrl) => {
-          const outputFileName = getFileName(assetUrl);
-          const outputFilePath = path.join(assetsDirPath, outputFileName);
+        const regExp = assetsLinks
+          .map((oldValue) => {
+            const newValue = `${assetsDirName}/${getFileName(oldValue)}`;
+            return {
+              oldValue,
+              newValue,
+            };
+          });
 
-          return {
-            assetUrl,
-            outputFilePath,
-            responseType: 'arraybuffer',
-          };
-        });
+        const newHtml = regExp.reduce((acc, currentValue) => {
+          const { oldValue, newValue } = currentValue;
+          return acc.replace(oldValue, newValue);
+        }, data);
 
-      assetsUrls = [...textAssetsUrls, ...mediaAssetsUrls];
+        return fs.writeFile(outputHtmlPath, newHtml)
+          .then(() => fs.mkdir(assetsDirPath))
+          .then(() => {
+            const promises = assetsUrls
+              .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath));
+            return promises;
+          })
+          .then(promises => Promise.all(promises));
+      }
 
-      const regExp = [...links, ...scripts, ...images]
-        .map((oldValue) => {
-          const newValue = `${assetsDirName}/${getFileName(oldValue)}`;
-          return {
-            oldValue,
-            newValue,
-          };
-        });
-
-      const newHtml = regExp.reduce((acc, currentValue) => {
-        const { oldValue, newValue } = currentValue;
-        return acc.replace(oldValue, newValue);
-      }, data);
-
-      return fs.writeFile(outputHtmlPath, newHtml);
-    })
-    .then(() => fs.mkdir(assetsDirPath))
-    .then(() => {
-      const promises = assetsUrls
-        .map((currentUrl) => {
-          const { assetUrl, responseType, outputFilePath } = currentUrl;
-          return loadAsset(assetUrl, outputFilePath, responseType);
-        });
-      return promises;
-    })
-    .then(promises => Promise.all(promises));
+      return fs.writeFile(outputHtmlPath, data);
+    });
 };
 
 export default loadPage;
