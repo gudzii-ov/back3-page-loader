@@ -22,16 +22,11 @@ const getFileName = (source) => {
     .concat(extention);
 };
 
-const loadAsset = (source, outputDirectory, responseType) => {
-  const outputFileName = getFileName(source);
-  const outputFilePath = path.join(outputDirectory, outputFileName);
-
-  return axios
-    .get(source, {
-      responseType,
-    })
-    .then(({ data }) => fs.writeFile(outputFilePath, data));
-};
+const loadAsset = (source, outputFilePath, responseType) => axios
+  .get(source, {
+    responseType,
+  })
+  .then(({ data }) => fs.writeFile(outputFilePath, data));
 
 // write source data to file, rewrite file if already exists
 
@@ -64,17 +59,29 @@ const loadPage = (source, outputDirectory) => {
 
       const textAssetsUrls = [...links, ...scripts]
         .map(assetLink => url.resolve(source, assetLink))
-        .map(assetUrl => ({
-          assetUrl,
-          responseType: 'text',
-        }));
+        .map((assetUrl) => {
+          const outputFileName = getFileName(assetUrl);
+          const outputFilePath = path.join(assetsDirPath, outputFileName);
+
+          return {
+            assetUrl,
+            outputFilePath,
+            responseType: 'text',
+          };
+        });
 
       const mediaAssetsUrls = images
         .map(assetLink => url.resolve(source, assetLink))
-        .map(assetUrl => ({
-          assetUrl,
-          responseType: 'arraybuffer',
-        }));
+        .map((assetUrl) => {
+          const outputFileName = getFileName(assetUrl);
+          const outputFilePath = path.join(assetsDirPath, outputFileName);
+
+          return {
+            assetUrl,
+            outputFilePath,
+            responseType: 'arraybuffer',
+          };
+        });
 
       assetsUrls = [...textAssetsUrls, ...mediaAssetsUrls];
 
@@ -83,7 +90,10 @@ const loadPage = (source, outputDirectory) => {
     .then(() => fs.mkdir(assetsDirPath))
     .then(() => {
       const promises = assetsUrls
-        .map(({ assetUrl, responseType }) => loadAsset(assetUrl, assetsDirPath, responseType));
+        .map((currentUrl) => {
+          const { assetUrl, responseType, outputFilePath } = currentUrl;
+          return loadAsset(assetUrl, outputFilePath, responseType);
+        });
       return promises;
     })
     .then(promises => Promise.all(promises));
