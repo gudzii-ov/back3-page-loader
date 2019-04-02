@@ -6,7 +6,7 @@ import url from 'url';
 
 // write source data to file, rewrite file if already exists
 
-const pageLoader = (source, outputDirectory) => {
+const loadPage = (source, outputDirectory) => {
   const { hostname, pathname } = url.parse(source);
   const outputHtmlName = `${hostname}-${pathname}`.replace(/[\W_]+/g, '-').concat('.html');
   const outputHtmlPath = path.join(outputDirectory, outputHtmlName);
@@ -16,4 +16,4 @@ const pageLoader = (source, outputDirectory) => {
     .then(({ data }) => fs.writeFile(outputHtmlPath, data));
 };
 
-export default pageLoader;
+export default loadPage;
