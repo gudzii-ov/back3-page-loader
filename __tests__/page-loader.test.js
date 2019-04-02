@@ -111,3 +111,80 @@ describe('Suit #2: download page with assets', () => {
     return expect(result).toEqual(imageData);
   });
 });
+
+describe('Suit #3: download page with assets 2', () => {
+  const ostmpdir = os.tmpdir();
+  const fixturesPath = path.join(__dirname, '__fixtures__');
+  const assetsPagePath = path.join(fixturesPath, 'assets-page-without-one.html');
+  const downloadedPagePath = path.join(fixturesPath, 'assets-page-without-one-downloaded.html');
+
+  const assetsPageUrl = '/assets-page-without-one';
+  const styleUrl = '/assets/style.css';
+  const scriptUrl = '/assets/script.js';
+  const imageUrl = '/assets/image.png';
+
+  let tmpDir;
+  let assetsPageHtml;
+  let downloadedPageHtml;
+  let styleData;
+  let scriptData;
+  let imageData;
+
+  beforeAll(async () => {
+    const host = 'http://localhost';
+
+    tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
+    assetsPageHtml = await fs.readFile(assetsPagePath, 'utf8');
+    downloadedPageHtml = await fs.readFile(downloadedPagePath, 'utf8');
+    styleData = await fs.readFile(path.join(fixturesPath, styleUrl), 'utf8');
+    scriptData = await fs.readFile(path.join(fixturesPath, scriptUrl), 'utf8');
+    imageData = await fs.readFile(path.join(fixturesPath, imageUrl));
+
+    const nockScope = nock(host)
+      .persist()
+      .get(assetsPageUrl)
+      .reply(200, assetsPageHtml)
+      .get(styleUrl)
+      .reply(200, styleData)
+      .get(scriptUrl)
+      .reply(200, scriptData)
+      .get(imageUrl)
+      .reply(200, imageData);
+
+    await loadPage(`${host}${assetsPageUrl}`, tmpDir);
+
+    nockScope.persist(false);
+  });
+
+  test('test #1: check html', async () => {
+    const fileName = 'localhost-assets-page-without-one.html';
+    const outputFilePath = path.resolve(tmpDir, fileName);
+
+    const result = await fs.readFile(outputFilePath, 'utf8');
+    return expect(result).toBe(downloadedPageHtml);
+  });
+
+  test('test #2: check stylesheet', async () => {
+    const fileName = 'assets-style.css';
+    const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-without-one_files', fileName);
+
+    const result = await fs.readFile(outputFilePath, 'utf8');
+    return expect(result).toBe(styleData);
+  });
+
+  test('test #3: check javascript', async () => {
+    const fileName = 'assets-script.js';
+    const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-without-one_files', fileName);
+
+    const result = await fs.readFile(outputFilePath, 'utf8');
+    return expect(result).toBe(scriptData);
+  });
+
+  test('test #4: check image', async () => {
+    const fileName = 'assets-image.png';
+    const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-without-one_files', fileName);
+
+    const result = await fs.readFile(outputFilePath);
+    return expect(result).toEqual(imageData);
+  });
+});
