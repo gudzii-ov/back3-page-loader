@@ -11,6 +11,6 @@ program
   .arguments('<source>')
   .action(source => loadPage(source, program.output)
     .then(() => console.log('download success'))
-    .catch(({ response: { status, statusText } }) => console.log(`Error occured: ${status} ${statusText}`)));
+    .catch(error => console.log(`Error occured: ${error}`)));
 
 program.parse(process.argv);
