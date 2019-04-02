@@ -59,6 +59,7 @@ const loadPage = (source, outputDirectory) => {
   const assetsDirPath = path.join(outputDirectory, assetsDirName);
 
   let assetsUrls;
+  let newHtml;
 
   // download source page
   return axios.get(source)
@@ -78,7 +79,7 @@ const loadPage = (source, outputDirectory) => {
             };
           });
 
-        const regExp = assetsLinks
+        const newHtmlRegExp = assetsLinks
           .map((oldValue) => {
             const newValue = `${assetsDirName}/${getFileName(oldValue)}`;
             return {
@@ -87,23 +88,25 @@ const loadPage = (source, outputDirectory) => {
             };
           });
 
-        const newHtml = regExp.reduce((acc, currentValue) => {
+        newHtml = newHtmlRegExp.reduce((acc, currentValue) => {
           const { oldValue, newValue } = currentValue;
           return acc.replace(oldValue, newValue);
         }, data);
-
-        return fs.writeFile(outputHtmlPath, newHtml)
-          .then(() => fs.mkdir(assetsDirPath))
-          .then(() => {
-            const promises = assetsUrls
-              .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath));
-            return promises;
-          })
-          .then(promises => Promise.all(promises));
+      } else {
+        assetsUrls = [];
+        newHtml = data;
       }
-
-      return fs.writeFile(outputHtmlPath, data);
-    });
+    })
+    .then(() => fs.mkdir(assetsDirPath))
+    .then(() => {
+      if (assetsUrls.length === 0) {
+        return;
+      }
+      const promises = assetsUrls
+        .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath));
+      Promise.all(promises);
+    })
+    .then(() => fs.writeFile(outputHtmlPath, newHtml));
 };
 
 export default loadPage;
