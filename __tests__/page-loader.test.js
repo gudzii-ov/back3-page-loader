@@ -83,7 +83,6 @@ describe('Suit #2: download page with assets', () => {
     const outputFilePath = path.resolve(tmpDir, fileName);
 
     const result = await fs.access(outputFilePath);
-    console.log(result);
     return expect(result).toBeUndefined(); // check html accessibility
   });
 
