@@ -10,15 +10,20 @@ const isLinkLocal = (link) => {
   return hostname === null;
 };
 
-const loadAsset = (source, outputDirectory, responseType) => {
+const getFileName = (source) => {
   const { pathname } = url.parse(source);
   const extention = pathname.match(/\.\w+$/)[0];
   const extRegExp = new RegExp(extention);
-  const outputFileName = pathname
+
+  return pathname
     .replace(/^\//, '')
     .replace(extRegExp, '')
     .replace(/[\W_]+/g, '-')
     .concat(extention);
+};
+
+const loadAsset = (source, outputDirectory, responseType) => {
+  const outputFileName = getFileName(source);
   const outputFilePath = path.join(outputDirectory, outputFileName);
 
   return axios
@@ -38,16 +43,12 @@ const loadPage = (source, outputDirectory) => {
   const assetsDirName = outputHtmlName.replace(/\.html$/, '_files');
   const assetsDirPath = path.join(outputDirectory, assetsDirName);
 
-  let $;
   let assetsUrls;
 
   // download source page
   return axios.get(source)
     .then(({ data }) => {
-      $ = cheerio.load(data);
-      return fs.writeFile(outputHtmlPath, data);
-    })
-    .then(() => {
+      const $ = cheerio.load(data);
       const links = $('link')
         .map((index, element) => $(element).attr('href'))
         .get()
@@ -76,6 +77,8 @@ const loadPage = (source, outputDirectory) => {
         }));
 
       assetsUrls = [...textAssetsUrls, ...mediaAssetsUrls];
+
+      return fs.writeFile(outputHtmlPath, data);
     })
     .then(() => fs.mkdir(assetsDirPath))
     .then(() => {
