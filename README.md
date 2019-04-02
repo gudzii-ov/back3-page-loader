@@ -27,4 +27,4 @@ $ page-loader -o <user directory> https://hexlet.io/courses
 
 Demo Asciinema
 
-[https://asciinema.org/a/238111](https://asciinema.org/a/238111)
+[https://asciinema.org/a/238485](https://asciinema.org/a/238485)
