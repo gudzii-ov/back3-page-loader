@@ -193,12 +193,172 @@ describe('Suit #4: page not found', () => {
 });
 
 describe('Suit #5: unavailable asset', () => {
-  test('check unavailable page', async () => {
-    const host = 'http://localhost';
-    nock(host)
-      .get('/page-not-found')
-      .reply(404, 'page not found');
+  const ostmpdir = os.tmpdir();
+  const fixturesPath = path.join(__dirname, '__fixtures__');
+  const assetsPagePath = path.join(fixturesPath, 'assets-page-without-one.html');
 
-    await expect(loadPage('http://localhost/page-not-found', 'tmpDir')).rejects.toThrow();
+  const assetsPageUrl = '/assets-page-without-one';
+  const styleUrl = '/assets/style.css';
+  const scriptUrl = '/assets/script.js';
+  const imageUrl = '/assets/image.png';
+
+  let host;
+  let tmpDir;
+  let assetsPageHtml;
+  let styleData;
+  let scriptData;
+  let nockScope;
+
+  beforeAll(async () => {
+    host = 'http://localhost';
+
+    tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
+    assetsPageHtml = await fs.readFile(assetsPagePath, 'utf8');
+    styleData = await fs.readFile(path.join(fixturesPath, styleUrl), 'utf8');
+    scriptData = await fs.readFile(path.join(fixturesPath, scriptUrl), 'utf8');
+
+    nockScope = nock(host)
+      .persist()
+      .get(assetsPageUrl)
+      .reply(200, assetsPageHtml)
+      .get(styleUrl)
+      .reply(200, styleData)
+      .get(scriptUrl)
+      .reply(200, scriptData)
+      .get(imageUrl)
+      .reply(404, 'not found');
+  });
+
+  afterAll(() => nockScope.persist(false));
+
+  test('test #1: check error', async () => {
+    await expect(loadPage(`${host}${assetsPageUrl}`, tmpDir)).resolves.toThrow();
+  });
+});
+
+describe('Suit #6: file system error - no such directory', () => {
+  const ostmpdir = os.tmpdir();
+  const fixturesPath = path.join(__dirname, '__fixtures__');
+  const assetsPagePath = path.join(fixturesPath, 'assets-page.html');
+
+  const assetsPageUrl = '/assets-page';
+  const styleUrl = '/assets/style.css';
+  const scriptUrl = '/assets/script.js';
+  const imageUrl = '/assets/image.png';
+
+  let host;
+  let tmpDir;
+  let assetsPageHtml;
+  let styleData;
+  let scriptData;
+  let nockScope;
+
+  beforeAll(async () => {
+    host = 'http://localhost';
+
+    tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
+    assetsPageHtml = await fs.readFile(assetsPagePath, 'utf8');
+    styleData = await fs.readFile(path.join(fixturesPath, styleUrl), 'utf8');
+    scriptData = await fs.readFile(path.join(fixturesPath, scriptUrl), 'utf8');
+
+    await fs.rmdir(tmpDir);
+
+    nockScope = nock(host)
+      .persist()
+      .get(assetsPageUrl)
+      .reply(404, assetsPageHtml)
+      .get(styleUrl)
+      .reply(200, styleData)
+      .get(scriptUrl)
+      .reply(200, scriptData)
+      .get(imageUrl)
+      .reply(404, 'not found');
+  });
+
+  afterAll(() => nockScope.persist(false));
+
+  test('test #1: check error', async () => {
+    await expect(loadPage(`${host}${assetsPageUrl}`, tmpDir)).rejects.toThrow();
+  });
+});
+
+describe('Suit #7: file system error - file exists', () => {
+  const ostmpdir = os.tmpdir();
+  const fixturesPath = path.join(__dirname, '__fixtures__');
+  const assetsPagePath = path.join(fixturesPath, 'assets-page.html');
+
+  const assetsPageUrl = '/assets-page';
+  const styleUrl = '/assets/style.css';
+  const scriptUrl = '/assets/script.js';
+  const imageUrl = '/assets/image.png';
+
+  let host;
+  let tmpDir;
+  let assetsPageHtml;
+  let styleData;
+  let scriptData;
+  let imageData;
+  let nockScope;
+
+  beforeAll(async () => {
+    host = 'http://localhost';
+
+    tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
+    assetsPageHtml = await fs.readFile(assetsPagePath, 'utf8');
+    styleData = await fs.readFile(path.join(fixturesPath, styleUrl), 'utf8');
+    scriptData = await fs.readFile(path.join(fixturesPath, scriptUrl), 'utf8');
+    imageData = await fs.readFile(path.join(fixturesPath, imageUrl));
+
+    nockScope = nock(host)
+      .persist()
+      .get(assetsPageUrl)
+      .reply(200, assetsPageHtml)
+      .get(styleUrl)
+      .reply(200, styleData)
+      .get(scriptUrl)
+      .reply(200, scriptData)
+      .get(imageUrl)
+      .reply(200, imageData);
+
+    await loadPage(`${host}${assetsPageUrl}`, tmpDir);
+  });
+
+  afterAll(() => nockScope.persist(false));
+
+  test('test #1: check error', async () => {
+    await expect(loadPage(`${host}${assetsPageUrl}`, tmpDir)).rejects.toThrow();
+  });
+});
+
+describe('Suit #8: file system error - file exists (without assets)', () => {
+  const ostmpdir = os.tmpdir();
+  const fixturesPath = path.join(__dirname, '__fixtures__');
+  const assetsPagePath = path.join(fixturesPath, 'simple-page.html');
+
+  const assetsPageUrl = '/simple-page';
+
+  let host;
+  let tmpDir;
+  let assetsPageHtml;
+  let nockScope;
+
+  beforeAll(async () => {
+    host = 'http://localhost';
+
+    tmpDir = await fs.mkdtemp(path.join(ostmpdir, 'page-loader-'));
+    assetsPageHtml = await fs.readFile(assetsPagePath, 'utf8');
+
+    nockScope = nock(host)
+      .persist()
+      .get(assetsPageUrl)
+      .reply(200, assetsPageHtml);
+
+    await loadPage(`${host}${assetsPageUrl}`, tmpDir);
+  });
+
+  afterAll(() => nockScope.persist(false));
+
+  test('test #1: check error', async () => {
+    await expect(loadPage(`${host}${assetsPageUrl}`, tmpDir)).rejects.toThrow();
   });
 });
