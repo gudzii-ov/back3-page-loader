@@ -8,6 +8,7 @@ import debug from 'debug';
 import _ from 'lodash/fp';
 
 const log = debug('page-loader');
+const logAxios = debug('page-loader: axios');
 const logAssets = debug('page-loader: assets');
 const logAssetsErrors = debug('page-loader: assets: error');
 
@@ -43,26 +44,25 @@ const getLocalAssetsList = (html) => {
     .map((index, element) => $(element).attr(assetsAttrs[asset]))
     .get()));
 
-  logAssets('found assets:');
-  logAssets(allAssets);
+  logAssets('found assets: %O', allAssets);
 
   const localAssets = allAssets
     .filter(item => isLinkLocal(item));
 
-  logAssets('local assets:');
-  logAssets(localAssets);
+  logAssets('local assets: %O', localAssets);
 
   return localAssets;
 };
 
-const loadAsset = (source, outputFilePath) => {
-  logAssets('loading asset %s', source);
-  return axios
-    .get(source, {
-      responseType: 'arraybuffer',
-    })
-    .then(({ data }) => fs.writeFile(outputFilePath, data));
-};
+const loadAsset = (source, outputFilePath) => axios
+  .get(source, {
+    responseType: 'arraybuffer',
+  })
+  .then(({ data }) => {
+    logAxios('loading asset %s', source);
+    logAxios(data);
+    return fs.writeFile(outputFilePath, data);
+  });
 
 // write source data to file, rewrite file if already exists
 
@@ -81,11 +81,16 @@ const loadPage = (source, outputDirectory) => {
 
   let assetsUrls;
   let newHtml;
+  log('new page loading');
+  log('source: %s', source);
+  log('html file name: %s', outputHtmlName);
 
   // download source page
-  log('loading page html');
   return axios.get(source)
-    .then(({ data }) => {
+    .then(({ status, data }) => {
+      log('loading page html');
+      logAxios('axios response: %s %s', status, data);
+
       const assetsLinks = getLocalAssetsList(data);
 
       assetsUrls = assetsLinks
@@ -99,6 +104,8 @@ const loadPage = (source, outputDirectory) => {
             outputFilePath,
           };
         });
+
+      logAssets('assets URLs for downloading: %O', assetsUrls);
 
       const newHtmlRegExp = assetsLinks
         .map((oldValue) => {
@@ -125,12 +132,13 @@ const loadPage = (source, outputDirectory) => {
     .then(() => {
       const promises = assetsUrls
         .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath)
-          .then(v => ({ result: 'success', value: v }))
+          .then(value => ({ result: 'success', value }))
           .catch(e => ({ result: 'error', error: `Download asset error: ${e}` })));
-      log('saving assets to disk');
+      logAssets('saving assets to disk');
       return Promise.all(promises);
     })
     .then((results) => {
+      logAssets('assets loading results: %O', results);
       results.forEach(({ result, error }) => {
         if (result === 'error') {
           logAssetsErrors('unable to download asset');
