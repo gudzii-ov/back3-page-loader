@@ -25,6 +25,16 @@ Download page to custom directory
 $ page-loader -o <user directory> https://hexlet.io/courses
 ```
 
+Enable page-loader specific debug output
+
+```bash
+$ DEBUG=page-loader page-loader https://hexlet.io/courses
+```
+or
+```bash
+$ DEBUG=page-loader page-loader -o <user directory> https://hexlet.io/courses
+```
+
 Demo Asciinema
 
-[https://asciinema.org/a/238485](https://asciinema.org/a/238485)
+[https://asciinema.org/a/238590](https://asciinema.org/a/238590)
