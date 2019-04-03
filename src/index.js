@@ -5,11 +5,17 @@ import { promises as fs } from 'fs';
 import url from 'url';
 import cheerio from 'cheerio';
 import debug from 'debug';
+import _ from 'lodash/fp';
 
 const log = debug('page-loader');
-const name = ('page-loader');
+const logAssets = debug('page-loader: assets');
+const logAssetsErrors = debug('page-loader: assets: error');
 
-log('running %s', name);
+const assetsAttrs = {
+  link: 'href',
+  script: 'src',
+  img: 'src',
+};
 
 const isLinkLocal = (link) => {
   const { hostname } = url.parse(link);
@@ -28,24 +34,29 @@ const getFileName = (source) => {
 };
 
 const getLocalAssetsList = (html) => {
-  log('getting assets list');
-  const $ = cheerio.load(html);
-  const links = $('link')
-    .map((index, element) => $(element).attr('href'))
-    .get();
-  const scripts = $('script')
-    .map((index, element) => $(element).attr('src'))
-    .get();
-  const images = $('img')
-    .map((index, element) => $(element).attr('src'))
-    .get();
+  logAssets('getting assets list');
 
-  return [...links, ...scripts, ...images]
+  const requiredAssets = ['link', 'script', 'img'];
+  const $ = cheerio.load(html);
+
+  const allAssets = _.flatten(requiredAssets.map(asset => $(asset)
+    .map((index, element) => $(element).attr(assetsAttrs[asset]))
+    .get()));
+
+  logAssets('found assets:');
+  logAssets(allAssets);
+
+  const localAssets = allAssets
     .filter(item => isLinkLocal(item));
+
+  logAssets('local assets:');
+  logAssets(localAssets);
+
+  return localAssets;
 };
 
 const loadAsset = (source, outputFilePath) => {
-  log('loading asset %s', source);
+  logAssets('loading asset %s', source);
   return axios
     .get(source, {
       responseType: 'arraybuffer',
@@ -77,36 +88,31 @@ const loadPage = (source, outputDirectory) => {
     .then(({ data }) => {
       const assetsLinks = getLocalAssetsList(data);
 
-      if (assetsLinks.length !== 0) {
-        assetsUrls = assetsLinks
-          .map(assetLink => url.resolve(source, assetLink))
-          .map((assetUrl) => {
-            const outputFileName = getFileName(assetUrl);
-            const outputFilePath = path.join(assetsDirPath, outputFileName);
+      assetsUrls = assetsLinks
+        .map(assetLink => url.resolve(source, assetLink))
+        .map((assetUrl) => {
+          const outputFileName = getFileName(assetUrl);
+          const outputFilePath = path.join(assetsDirPath, outputFileName);
 
-            return {
-              assetUrl,
-              outputFilePath,
-            };
-          });
+          return {
+            assetUrl,
+            outputFilePath,
+          };
+        });
 
-        const newHtmlRegExp = assetsLinks
-          .map((oldValue) => {
-            const newValue = `${assetsDirName}/${getFileName(oldValue)}`;
-            return {
-              oldValue,
-              newValue,
-            };
-          });
+      const newHtmlRegExp = assetsLinks
+        .map((oldValue) => {
+          const newValue = `${assetsDirName}/${getFileName(oldValue)}`;
+          return {
+            oldValue,
+            newValue,
+          };
+        });
 
-        newHtml = newHtmlRegExp.reduce((acc, currentValue) => {
-          const { oldValue, newValue } = currentValue;
-          return acc.replace(oldValue, newValue);
-        }, data);
-      } else {
-        assetsUrls = [];
-        newHtml = data;
-      }
+      newHtml = newHtmlRegExp.reduce((acc, currentValue) => {
+        const { oldValue, newValue } = currentValue;
+        return acc.replace(oldValue, newValue);
+      }, data);
     })
     .then(() => {
       log('create assets dir');
@@ -127,6 +133,7 @@ const loadPage = (source, outputDirectory) => {
     .then((results) => {
       results.forEach(({ result, error }) => {
         if (result === 'error') {
+          logAssetsErrors('unable to download asset');
           throw new Error(error);
         }
       });
