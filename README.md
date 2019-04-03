@@ -37,4 +37,4 @@ $ DEBUG=page-loader page-loader -o <user directory> https://hexlet.io/courses
 
 Demo Asciinema
 
-[![asciicast](https://asciinema.org/a/238590.png)](https://asciinema.org/a/238590)
+[![asciicast](https://asciinema.org/a/238697.png)](https://asciinema.org/a/238697)
