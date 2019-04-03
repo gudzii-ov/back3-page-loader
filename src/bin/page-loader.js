@@ -10,9 +10,9 @@ program
   .option('-o, --output [outputDirectory]', 'Output directory', process.cwd()) // use current directory as default
   .arguments('<source>')
   .action(source => loadPage(source, program.output)
-    .then(() => process.exit(0))
+    .then(() => console.log('Download successfull'))
     .catch((error) => {
-      console.log(`Error occured: ${error}`);
+      console.error(`Error occured: ${error}`);
       process.exit(1);
     }));
 
