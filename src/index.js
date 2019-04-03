@@ -127,7 +127,7 @@ const loadPage = (source, outputDirectory) => {
     .then((results) => {
       results.forEach(({ result, error }) => {
         if (result === 'error') {
-          throw error;
+          throw new Error(error);
         }
       });
     });
