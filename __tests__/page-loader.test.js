@@ -115,10 +115,10 @@ describe('Suit #2: download page with assets', () => {
 describe('Suit #3: download page with assets 2', () => {
   const ostmpdir = os.tmpdir();
   const fixturesPath = path.join(__dirname, '__fixtures__');
-  const assetsPagePath = path.join(fixturesPath, 'assets-page-without-one.html');
-  const downloadedPagePath = path.join(fixturesPath, 'assets-page-without-one-downloaded.html');
+  const assetsPagePath = path.join(fixturesPath, 'assets-page-2.html');
+  const downloadedPagePath = path.join(fixturesPath, 'assets-page-2-downloaded.html');
 
-  const assetsPageUrl = '/assets-page-without-one';
+  const assetsPageUrl = '/assets-page-2';
   const styleUrl = '/assets/style.css';
   const scriptUrl = '/assets/script.js';
   const imageUrl = '/assets/image.png';
@@ -157,7 +157,7 @@ describe('Suit #3: download page with assets 2', () => {
   });
 
   test('test #1: check html', async () => {
-    const fileName = 'localhost-assets-page-without-one.html';
+    const fileName = 'localhost-assets-page-2.html';
     const outputFilePath = path.resolve(tmpDir, fileName);
 
     const result = await fs.readFile(outputFilePath, 'utf8');
@@ -166,7 +166,7 @@ describe('Suit #3: download page with assets 2', () => {
 
   test('test #2: check javascript', async () => {
     const fileName = 'assets-script.js';
-    const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-without-one_files', fileName);
+    const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-2_files', fileName);
 
     const result = await fs.readFile(outputFilePath, 'utf8');
     return expect(result).toBe(scriptData);
@@ -174,9 +174,31 @@ describe('Suit #3: download page with assets 2', () => {
 
   test('test #3: check image', async () => {
     const fileName = 'assets-image.png';
-    const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-without-one_files', fileName);
+    const outputFilePath = path.resolve(tmpDir, 'localhost-assets-page-2_files', fileName);
 
     const result = await fs.readFile(outputFilePath);
     return expect(result).toEqual(imageData);
+  });
+});
+
+describe('Suit #4: page not found', () => {
+  test('check unavailable page', async () => {
+    const host = 'http://localhost';
+    nock(host)
+      .get('/page-not-found')
+      .reply(404, 'page not found');
+
+    await expect(loadPage('http://localhost/page-not-found', 'tmpDir')).rejects.toThrow();
+  });
+});
+
+describe('Suit #5: unavailable asset', () => {
+  test('check unavailable page', async () => {
+    const host = 'http://localhost';
+    nock(host)
+      .get('/page-not-found')
+      .reply(404, 'page not found');
+
+    await expect(loadPage('http://localhost/page-not-found', 'tmpDir')).rejects.toThrow();
   });
 });
