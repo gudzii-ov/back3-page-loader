@@ -113,20 +113,23 @@ const loadPage = (source, outputDirectory) => {
       return fs.mkdir(assetsDirPath);
     })
     .then(() => {
-      if (assetsUrls.length === 0) {
-        log('no assets found');
-        return;
-      }
+      log('saving html file');
+      return fs.writeFile(outputHtmlPath, newHtml);
+    })
+    .then(() => {
       const promises = assetsUrls
         .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath)
           .then(v => ({ result: 'success', value: v }))
           .catch(e => ({ result: 'error', error: e })));
       log('saving assets to disk');
-      Promise.all(promises);
+      return Promise.all(promises);
     })
-    .then(() => {
-      log('saving html file');
-      return fs.writeFile(outputHtmlPath, newHtml);
+    .then((results) => {
+      results.forEach(({ result, error }) => {
+        if (result === 'error') {
+          throw error;
+        }
+      });
     });
 };
 
