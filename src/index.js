@@ -108,7 +108,10 @@ const loadPage = (source, outputDirectory) => {
         newHtml = data;
       }
     })
-    .then(() => fs.mkdir(assetsDirPath))
+    .then(() => {
+      log('create assets dir');
+      return fs.mkdir(assetsDirPath);
+    })
     .then(() => {
       if (assetsUrls.length === 0) {
         log('no assets found');
@@ -118,6 +121,7 @@ const loadPage = (source, outputDirectory) => {
         .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath)
           .then(v => ({ result: 'success', value: v }))
           .catch(e => ({ result: 'error', error: e })));
+      log('saving assets to disk');
       Promise.all(promises);
     })
     .then(() => {
