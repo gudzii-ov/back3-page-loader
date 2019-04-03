@@ -4,6 +4,12 @@ import path from 'path';
 import { promises as fs } from 'fs';
 import url from 'url';
 import cheerio from 'cheerio';
+import debug from 'debug';
+
+const log = debug('page-loader');
+const name = ('page-loader');
+
+log('running %s', name);
 
 const isLinkLocal = (link) => {
   const { hostname } = url.parse(link);
@@ -22,6 +28,7 @@ const getFileName = (source) => {
 };
 
 const getLocalAssetsList = (html) => {
+  log('getting assets list');
   const $ = cheerio.load(html);
   const links = $('link')
     .map((index, element) => $(element).attr('href'))
@@ -37,11 +44,14 @@ const getLocalAssetsList = (html) => {
     .filter(item => isLinkLocal(item));
 };
 
-const loadAsset = (source, outputFilePath) => axios
-  .get(source, {
-    responseType: 'arraybuffer',
-  })
-  .then(({ data }) => fs.writeFile(outputFilePath, data));
+const loadAsset = (source, outputFilePath) => {
+  log('loading asset %s', source);
+  return axios
+    .get(source, {
+      responseType: 'arraybuffer',
+    })
+    .then(({ data }) => fs.writeFile(outputFilePath, data));
+};
 
 // write source data to file, rewrite file if already exists
 
@@ -62,6 +72,7 @@ const loadPage = (source, outputDirectory) => {
   let newHtml;
 
   // download source page
+  log('loading page html');
   return axios.get(source)
     .then(({ data }) => {
       const assetsLinks = getLocalAssetsList(data);
@@ -100,6 +111,7 @@ const loadPage = (source, outputDirectory) => {
     .then(() => fs.mkdir(assetsDirPath))
     .then(() => {
       if (assetsUrls.length === 0) {
+        log('no assets found');
         return;
       }
       const promises = assetsUrls
@@ -108,7 +120,10 @@ const loadPage = (source, outputDirectory) => {
           .catch(e => ({ result: 'error', error: e })));
       Promise.all(promises);
     })
-    .then(() => fs.writeFile(outputHtmlPath, newHtml));
+    .then(() => {
+      log('saving html file');
+      return fs.writeFile(outputHtmlPath, newHtml);
+    });
 };
 
 export default loadPage;
