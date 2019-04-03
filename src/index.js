@@ -120,7 +120,7 @@ const loadPage = (source, outputDirectory) => {
       const promises = assetsUrls
         .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath)
           .then(v => ({ result: 'success', value: v }))
-          .catch(e => ({ result: 'error', error: e })));
+          .catch(e => ({ result: 'error', error: `Download asset error: ${e}` })));
       log('saving assets to disk');
       return Promise.all(promises);
     })
