@@ -59,7 +59,7 @@ const loadAsset = (source, outputFilePath) => axios
     responseType: 'arraybuffer',
   })
   .then(({ data }) => {
-    logAxios('loading asset %s', source);
+    logAssets('loading asset %s to %s', source, outputFilePath);
     logAxios(data);
     return fs.writeFile(outputFilePath, data);
   });
@@ -122,14 +122,16 @@ const loadPage = (source, outputDirectory) => {
       }, data);
     })
     .then(() => {
-      log('create assets dir');
+      log('create assets dir: %s', assetsDirPath);
       return fs.mkdir(assetsDirPath);
     })
     .then(() => {
-      log('saving html file');
+      log('assets dir created successfully');
+      log('saving html file to %s', outputHtmlPath);
       return fs.writeFile(outputHtmlPath, newHtml);
     })
     .then(() => {
+      log('html saved successfully');
       const promises = assetsUrls
         .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath)
           .then(value => ({ result: 'success', value }))
