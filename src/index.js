@@ -11,7 +11,6 @@ import Listr from 'listr';
 const log = debug('page-loader');
 const logAxios = debug('page-loader: axios');
 const logAssets = debug('page-loader: assets');
-// const logAssetsErrors = debug('page-loader: assets: error');
 
 const assetsAttrs = {
   link: 'href',
@@ -80,8 +79,6 @@ const loadPage = (source, outputDirectory) => {
   const assetsDirName = outputHtmlName.replace(/\.html$/, '_files');
   const assetsDirPath = path.join(outputDirectory, assetsDirName);
 
-  let assetsUrls;
-  // let newHtml;
   log('new page loading');
   log('source: %s', source);
   log('html file name: %s', outputHtmlName);
@@ -95,37 +92,46 @@ const loadPage = (source, outputDirectory) => {
         .then(({ status, data }) => {
           log('loading page html');
           logAxios('axios response: %s %s', status, data);
-
-          const assetsLinks = getLocalAssetsList(data);
-
-          assetsUrls = assetsLinks
-            .map(assetLink => url.resolve(source, assetLink))
-            .map((assetUrl) => {
-              const outputFileName = getFileName(assetUrl);
-              const outputFilePath = path.join(assetsDirPath, outputFileName);
-
-              return {
-                assetUrl,
-                outputFilePath,
-              };
-            });
-
-          logAssets('assets URLs for downloading: %O', assetsUrls);
-
-          const newHtmlRegExp = assetsLinks
-            .map((oldValue) => {
-              const newValue = `${assetsDirName}/${getFileName(oldValue)}`;
-              return {
-                oldValue,
-                newValue,
-              };
-            });
-
-          ctx.newHtml = newHtmlRegExp.reduce((acc, currentValue) => {
-            const { oldValue, newValue } = currentValue;
-            return acc.replace(oldValue, newValue);
-          }, data);
+          ctx.data = data;
         }),
+    },
+    {
+      title: 'get assets list',
+      task: (ctx) => {
+        ctx.assetsLinks = getLocalAssetsList(ctx.data);
+
+        ctx.assetsUrls = ctx.assetsLinks
+          .map(assetLink => url.resolve(source, assetLink))
+          .map((assetUrl) => {
+            const outputFileName = getFileName(assetUrl);
+            const outputFilePath = path.join(assetsDirPath, outputFileName);
+
+            return {
+              assetUrl,
+              outputFilePath,
+            };
+          });
+
+        logAssets('assets URLs for downloading: %O', ctx.assetsUrls);
+      },
+    },
+    {
+      title: 'localize html assets',
+      task: (ctx) => {
+        const newHtmlRegExp = ctx.assetsLinks
+          .map((oldValue) => {
+            const newValue = `${assetsDirName}/${getFileName(oldValue)}`;
+            return {
+              oldValue,
+              newValue,
+            };
+          });
+
+        ctx.newHtml = newHtmlRegExp.reduce((acc, currentValue) => {
+          const { oldValue, newValue } = currentValue;
+          return acc.replace(oldValue, newValue);
+        }, ctx.data);
+      },
     },
     {
       title: 'create assets dir',
@@ -144,9 +150,9 @@ const loadPage = (source, outputDirectory) => {
     },
     {
       title: 'save assets',
-      task: () => {
+      task: (ctx) => {
         log('html saved successfully');
-        const assetsTasks = assetsUrls
+        const assetsTasks = ctx.assetsUrls
           .map(({ assetUrl, outputFilePath }) => ({
             title: `Loading asset from ${assetUrl} to ${outputFilePath}`,
             task: () => loadAsset(assetUrl, outputFilePath),
@@ -156,8 +162,7 @@ const loadPage = (source, outputDirectory) => {
         const loadAssetsTask = new Listr(assetsTasks, {
           concurrent: true, exitOnError: false,
         });
-        loadAssetsTask.run()
-          .catch(err => err);
+        return loadAssetsTask.run();
       },
     },
   ]);
