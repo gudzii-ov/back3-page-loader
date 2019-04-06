@@ -41,4 +41,4 @@ $ DEBUG=page-loader page-loader -o <user directory> https://hexlet.io/courses
 
 ### Demo with Listr
 
-[![asciicast](https://asciinema.org/a/239225)](https://asciinema.org/a/239225)
+[![asciicast](https://asciinema.org/a/239225.png)](https://asciinema.org/a/239225)
