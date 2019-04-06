@@ -35,6 +35,10 @@ or
 $ DEBUG=page-loader page-loader -o <user directory> https://hexlet.io/courses
 ```
 
-Demo Asciinema
+## Demo Asciinema
 
 [![asciicast](https://asciinema.org/a/238697.png)](https://asciinema.org/a/238697)
+
+### Demo with Listr
+
+[![asciicast](https://asciinema.org/a/239225)](https://asciinema.org/a/239225)
