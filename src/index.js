@@ -6,11 +6,12 @@ import url from 'url';
 import cheerio from 'cheerio';
 import debug from 'debug';
 import _ from 'lodash/fp';
+import Listr from 'listr';
 
 const log = debug('page-loader');
 const logAxios = debug('page-loader: axios');
 const logAssets = debug('page-loader: assets');
-const logAssetsErrors = debug('page-loader: assets: error');
+// const logAssetsErrors = debug('page-loader: assets: error');
 
 const assetsAttrs = {
   link: 'href',
@@ -132,21 +133,18 @@ const loadPage = (source, outputDirectory) => {
     })
     .then(() => {
       log('html saved successfully');
-      const promises = assetsUrls
-        .map(({ assetUrl, outputFilePath }) => loadAsset(assetUrl, outputFilePath)
-          .then(value => ({ result: 'success', value }))
-          .catch(e => ({ result: 'error', error: `Download asset error: ${e}` })));
+      const assetsTasks = assetsUrls
+        .map(({ assetUrl, outputFilePath }) => ({
+          title: `Loading asset from ${assetUrl} to ${outputFilePath}`,
+          task: () => loadAsset(assetUrl, outputFilePath),
+        }));
+
       logAssets('saving assets to disk');
-      return Promise.all(promises);
-    })
-    .then((results) => {
-      logAssets('assets loading results: %O', results);
-      results.forEach(({ result, error }) => {
-        if (result === 'error') {
-          logAssetsErrors('unable to download asset');
-          throw new Error(error);
-        }
+      const loadAssetsTask = new Listr(assetsTasks, {
+        concurrent: true, exitOnError: false,
       });
+      loadAssetsTask.run()
+        .catch(err => err);
     });
 };
 
