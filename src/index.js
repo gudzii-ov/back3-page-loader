@@ -159,10 +159,9 @@ const loadPage = (source, outputDirectory) => {
           }));
 
         logAssets('saving assets to disk');
-        const loadAssetsTask = new Listr(assetsTasks, {
+        return new Listr(assetsTasks, {
           concurrent: true, exitOnError: false,
         });
-        return loadAssetsTask.run();
       },
     },
   ]);
